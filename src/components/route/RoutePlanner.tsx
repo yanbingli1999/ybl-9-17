@@ -1,8 +1,10 @@
-import { Truck, MapPin, Clock, Coins, AlertTriangle } from 'lucide-react';
+import { Truck, MapPin, Clock, Coins, AlertTriangle, Moon, Sun, Ticket, Shield } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
 import { calculateRouteTime, calculateLoad, calculateTripCost } from '../../utils/routeCalc';
+import { getNightTravelOptions, getRiskLevelLabel, getRiskLevelColor, NIGHT_PASS_COST, isNightTime } from '../../utils/nightRules';
 import CommissionCard from '../port/CommissionCard';
 import { useMemo, useState } from 'react';
+import type { NightTravelChoice } from '../../../shared/types';
 
 const RoutePlanner = () => {
   const {
@@ -16,10 +18,13 @@ const RoutePlanner = () => {
     selectedCommissions,
     selectedVehicle,
     selectedRoute,
+    selectedNightChoice,
     selectCommission,
     selectVehicle,
     selectRoute,
+    selectNightChoice,
     startTrip,
+    buyNightPass,
     isDispatching,
     error,
   } = useGameStore();
@@ -47,10 +52,17 @@ const RoutePlanner = () => {
   const selectedRouteData = routes.find(r => r.id === selectedRoute);
   const destination = cities.find(c => c.id === destinationId);
   
+  const isNight = isNightTime(player.timeOfDay);
+  
+  const nightOptions = useMemo(() => {
+    if (!selectedRouteData || !isNight) return [];
+    return getNightTravelOptions(player, selectedRouteData.type);
+  }, [selectedRouteData, player, isNight]);
+  
   const routeCalculation = useMemo(() => {
     if (!selectedRouteData || !selectedVehicleData || !currentWeather) return null;
-    return calculateRouteTime(selectedRouteData, selectedVehicleData, currentWeather);
-  }, [selectedRouteData, selectedVehicleData, currentWeather]);
+    return calculateRouteTime(selectedRouteData, selectedVehicleData, currentWeather, selectedNightChoice);
+  }, [selectedRouteData, selectedVehicleData, currentWeather, selectedNightChoice]);
   
   const loadCalculation = useMemo(() => {
     if (!selectedVehicleData || selectedCommissionsData.length === 0) return null;
@@ -63,8 +75,11 @@ const RoutePlanner = () => {
   
   const tripCost = useMemo(() => {
     if (!selectedRouteData || !selectedVehicleData || !routeCalculation) return 0;
-    return calculateTripCost(selectedRouteData, selectedVehicleData, routeCalculation.totalTime);
-  }, [selectedRouteData, selectedVehicleData, routeCalculation]);
+    const nightCost = nightOptions.find(o => o.choice === selectedNightChoice)?.costModifier || 0;
+    return calculateTripCost(selectedRouteData, selectedVehicleData, routeCalculation.totalTime, nightCost);
+  }, [selectedRouteData, selectedVehicleData, routeCalculation, selectedNightChoice, nightOptions]);
+  
+  const selectedNightOption = nightOptions.find(o => o.choice === selectedNightChoice);
   
   const handleStartTrip = async () => {
     const success = await startTrip();
@@ -73,12 +88,43 @@ const RoutePlanner = () => {
     }
   };
 
+  const handleBuyNightPass = () => {
+    buyNightPass();
+  };
+
+  const getTimeOfDayIcon = () => {
+    if (isNight) return <Moon className="w-5 h-5 text-indigo-500" />;
+    return <Sun className="w-5 h-5 text-amber-500" />;
+  };
+
+  const getTimeOfDayLabel = () => {
+    const labels: Record<string, string> = {
+      morning: '清晨',
+      afternoon: '午后',
+      evening: '傍晚',
+      night: '夜晚',
+    };
+    return labels[player.timeOfDay] || player.timeOfDay;
+  };
+
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">路线规划</h2>
-          <p className="text-slate-500">选择货物、车辆和路线，安排运输任务</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800">路线规划</h2>
+            <p className="text-slate-500">选择货物、车辆和路线，安排运输任务</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-lg">
+              {getTimeOfDayIcon()}
+              <span className="font-medium text-slate-700">第 {player.currentDay} 天 · {getTimeOfDayLabel()}</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-lg border border-amber-200">
+              <Ticket className="w-5 h-5 text-amber-600" />
+              <span className="font-medium text-amber-700">夜行牌: {player.nightPass.count}</span>
+            </div>
+          </div>
         </div>
         
         {error && (
@@ -199,6 +245,111 @@ const RoutePlanner = () => {
                 )}
               </div>
             )}
+
+            {selectedRouteData && isNight && nightOptions.length > 0 && (
+              <div className="bg-white rounded-xl shadow-md p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                    <Moon className="w-5 h-5 text-indigo-500" />
+                    夜间出行方式
+                  </h3>
+                  <button
+                    onClick={handleBuyNightPass}
+                    disabled={player.nightPass.count >= 5}
+                    className="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    购买夜行牌 ({NIGHT_PASS_COST} 金币)
+                  </button>
+                </div>
+                <p className="text-sm text-slate-500 mb-4">
+                  {selectedRouteData.type === 'land' 
+                    ? '夜间宵禁期间，陆路通行需选择通行方式。'
+                    : '夜间航行速度更快，但风险也更高。'}
+                </p>
+                
+                <div className="space-y-3">
+                  {nightOptions.map(option => {
+                    const isSelected = selectedNightChoice === option.choice;
+                    const riskColorClass = getRiskLevelColor(option.riskLevel);
+                    
+                    return (
+                      <button
+                        key={option.choice}
+                        onClick={() => option.available && selectNightChoice(option.choice as NightTravelChoice)}
+                        disabled={!option.available}
+                        className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                          isSelected
+                            ? 'border-indigo-500 bg-indigo-50'
+                            : option.available
+                            ? 'border-slate-200 hover:border-slate-300'
+                            : 'border-slate-100 opacity-60 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              option.choice === 'night_pass' ? 'bg-green-100' :
+                              option.choice === 'bribe' ? 'bg-amber-100' : 'bg-slate-100'
+                            }`}>
+                              {option.choice === 'night_pass' && <Shield className="w-5 h-5 text-green-600" />}
+                              {option.choice === 'bribe' && <Coins className="w-5 h-5 text-amber-600" />}
+                              {option.choice === 'wait_dawn' && <Sun className="w-5 h-5 text-slate-600" />}
+                            </div>
+                            <div>
+                              <div className="font-medium text-slate-800">{option.label}</div>
+                              <div className="text-xs text-slate-500">{option.description}</div>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskColorClass}`}>
+                            {getRiskLevelLabel(option.riskLevel)}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 text-xs mt-3 pt-3 border-t border-slate-100">
+                          <div>
+                            <div className="text-slate-400">时间影响</div>
+                            <div className={`font-medium ${
+                              option.timeModifier < 0 ? 'text-green-600' :
+                              option.timeModifier > 0 && option.choice !== 'wait_dawn' ? 'text-red-600' : 'text-slate-700'
+                            }`}>
+                              {option.choice === 'wait_dawn' 
+                                ? `+${option.timeModifier}小时`
+                                : option.timeModifier < 0 
+                                  ? `${Math.round(option.timeModifier * 100)}%`
+                                  : `+${Math.round(option.timeModifier * 100)}%`}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-slate-400">费用</div>
+                            <div className={`font-medium ${
+                              option.costModifier > 0 ? 'text-amber-600' : 'text-slate-700'
+                            }`}>
+                              {option.costModifier > 0 ? `${option.costModifier} 金币` : '免费'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-slate-400">声望</div>
+                            <div className={`font-medium ${
+                              option.reputationModifier > 0 ? 'text-green-600' :
+                              option.reputationModifier < 0 ? 'text-red-600' : 'text-slate-700'
+                            }`}>
+                              {option.reputationModifier > 0 ? `+${option.reputationModifier}` : option.reputationModifier}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {option.reason && (
+                          <div className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            {option.reason}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="space-y-6">
@@ -315,6 +466,20 @@ const RoutePlanner = () => {
                           <span>×{currentWeather.speedModifier}</span>
                         </div>
                       )}
+                      {selectedNightOption && (
+                        <div className="flex justify-between text-indigo-600">
+                          <span className="flex items-center gap-1">
+                            <Moon className="w-4 h-4" /> 夜间{selectedNightOption.label}
+                          </span>
+                          <span>
+                            {selectedNightOption.timeModifier < 0 
+                              ? `${Math.round(selectedNightOption.timeModifier * 100)}% 时间`
+                              : selectedNightOption.choice === 'wait_dawn'
+                                ? `+${selectedNightOption.timeModifier}小时`
+                                : `+${Math.round(selectedNightOption.timeModifier * 100)}% 时间`}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -355,12 +520,19 @@ const RoutePlanner = () => {
                       !selectedRoute ||
                       player.gold < tripCost ||
                       (loadCalculation?.isOverloaded || false) ||
-                      isDispatching
+                      isDispatching ||
+                      (isNight && !selectedNightChoice && !!selectedRouteData)
                     }
                     className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-400 hover:to-orange-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isDispatching ? '派车中...' : '确认派车'}
                   </button>
+                  
+                  {isNight && selectedRouteData && !selectedNightChoice && (
+                    <p className="text-xs text-center text-amber-600 mt-2">
+                      夜间出行，请选择出行方式
+                    </p>
+                  )}
                 </div>
               </div>
             )}

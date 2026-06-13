@@ -1,0 +1,138 @@
+[
+  {
+    "id": "night-patrol",
+    "type": "danger",
+    "title": "夜巡盘问",
+    "description": "城门守军在夜色中拦住了你的车队，火把照亮了你的货物。\"宵禁时分，何人通行？\"",
+    "choices": ["出示夜行牌", "塞银子打点", "据理力争"],
+    "effects": [
+      { "type": "delay", "value": 1, "description": "验牌放行，仅延误1小时" },
+      { "type": "gold", "value": -120, "description": "贿赂守门人120金币" },
+      { "type": "reputation", "value": -20, "description": "惹怒守军，声望降低" }
+    ],
+    "probability": 0.3,
+    "pool": "night_land"
+  },
+  {
+    "id": "night-sneak-caught",
+    "type": "danger",
+    "title": "翻墙被擒",
+    "description": "试图绕过城门时被巡夜兵丁当场擒获，货物被扣下检查。",
+    "choices": ["认罚求饶", "编造官府差事", "趁乱逃脱"],
+    "effects": [
+      { "type": "gold", "value": -200, "description": "罚款200金币" },
+      { "type": "reputation", "value": -30, "description": "假冒官差，若被识破声望大损" },
+      { "type": "damage", "value": 35, "description": "逃跑中货物损失35%" }
+    ],
+    "probability": 0.15,
+    "pool": "night_land"
+  },
+  {
+    "id": "night-ghost-lantern",
+    "type": "luck",
+    "title": "鬼灯笼引路",
+    "description": "夜雾中一盏灯笼在前方飘动，你犹豫着跟了上去，竟找到了一条避开关卡的小径。",
+    "choices": ["跟随灯笼前行", "不跟，走原路"],
+    "effects": [
+      { "type": "delay", "value": -3, "description": "捷径节省3小时" },
+      { "type": "delay", "value": 4, "description": "走原路额外延误4小时" }
+    ],
+    "probability": 0.08,
+    "pool": "night_land"
+  },
+  {
+    "id": "night-robber",
+    "type": "danger",
+    "title": "夜行劫匪",
+    "description": "黑暗中窜出数名蒙面人，手执利刃围住了你的车队。\"留下买路财！\"",
+    "choices": ["交钱保命", "虚张声势", "趁黑突围"],
+    "effects": [
+      { "type": "gold", "value": -180, "description": "交出180金币" },
+      { "type": "reputation", "value": -5, "description": "虚张声势居然蒙混过关，但也丢了颜面" },
+      { "type": "damage", "value": 40, "description": "突围中货物损失40%" }
+    ],
+    "probability": 0.2,
+    "pool": "night_land"
+  },
+  {
+    "id": "night-shelter",
+    "type": "luck",
+    "title": "夜宿善人",
+    "description": "一位好心的客栈老板深夜仍为你敞开大门，还提供了热食和换马。",
+    "choices": ["付钱感谢", "赠送货物致谢"],
+    "effects": [
+      { "type": "gold", "value": -30, "description": "支付30金币住宿费" },
+      { "type": "delay", "value": -2, "description": "换马后节省2小时" }
+    ],
+    "probability": 0.1,
+    "pool": "night_land"
+  },
+  {
+    "id": "night-water-reef",
+    "type": "danger",
+    "title": "暗礁险情",
+    "description": "夜航中船身猛然一震——撞上了暗礁！船舱开始进水。",
+    "choices": ["紧急修补船舱", "抛弃部分货物减轻载重", "全速冲向浅滩"],
+    "effects": [
+      { "type": "delay", "value": 6, "description": "修补船舱延误6小时" },
+      { "type": "damage", "value": 30, "description": "抛弃30%货物保命" },
+      { "type": "damage", "value": 50, "description": "搁浅损失50%货物" }
+    ],
+    "probability": 0.25,
+    "pool": "night_water"
+  },
+  {
+    "id": "night-water-pirate",
+    "type": "danger",
+    "title": "夜袭水寇",
+    "description": "黑暗中无声无息地靠过来几条小船——是水寇！火光照亮了他们狰狞的面孔。",
+    "choices": ["缴纳保护费", "点燃火把迎战", "趁夜色逃离"],
+    "effects": [
+      { "type": "gold", "value": -250, "description": "交出250金币保护费" },
+      { "type": "damage", "value": 35, "description": "交锋中货物损失35%" },
+      { "type": "delay", "value": 8, "description": "绕路逃跑延误8小时" }
+    ],
+    "probability": 0.2,
+    "pool": "night_water"
+  },
+  {
+    "id": "night-water-mist",
+    "type": "accident",
+    "title": "夜雾迷航",
+    "description": "江面升起浓雾，伸手不见五指。船只在雾中偏离了航线。",
+    "choices": ["停船等雾散", "凭经验摸索前行", "点火为标"],
+    "effects": [
+      { "type": "delay", "value": 6, "description": "等雾散延误6小时" },
+      { "type": "delay", "value": 10, "description": "迷路后绕回延误10小时" },
+      { "type": "gold", "value": -50, "description": "点火标耗费50金币物料" }
+    ],
+    "probability": 0.25,
+    "pool": "night_water"
+  },
+  {
+    "id": "night-water-nightfisherman",
+    "type": "luck",
+    "title": "夜渔指路",
+    "description": "远处渔火闪烁，一位老渔夫划船过来，主动提出为你领航。",
+    "choices": ["接受领航", "婉拒好意"],
+    "effects": [
+      { "type": "delay", "value": -4, "description": "老渔夫熟悉暗流，节省4小时" },
+      { "type": "reputation", "value": 5, "description": "独自夜行，胆识可嘉" }
+    ],
+    "probability": 0.1,
+    "pool": "night_water"
+  },
+  {
+    "id": "night-water-storm",
+    "type": "weather",
+    "title": "夜风暴",
+    "description": "远处闪电划破夜空，风暴正朝你的船袭来！夜间无处避风。",
+    "choices": ["加固货物硬抗", "全速抢靠最近的岸"],
+    "effects": [
+      { "type": "damage", "value": 45, "description": "货物被浪打湿损失45%" },
+      { "type": "delay", "value": 8, "description": "靠岸避风延误8小时" }
+    ],
+    "probability": 0.2,
+    "pool": "night_water"
+  }
+]

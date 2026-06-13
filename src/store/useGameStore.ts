@@ -14,6 +14,7 @@ import type {
   Weather,
   GameEvent,
   ReputationGrade,
+  NightTravelChoice,
 } from '../../shared/types';
 import { api } from '../services/api';
 import {
@@ -40,6 +41,12 @@ import {
   calculateLoad,
   calculateTripCost,
 } from '../utils/routeCalc';
+import {
+  resolveNightTravel,
+  consumeNightPass,
+  purchaseNightPass,
+  canPurchaseNightPass,
+} from '../utils/nightRules';
 
 interface GameState {
   player: Player;
@@ -56,10 +63,12 @@ interface GameState {
   vehicleTemplates: Vehicle[];
   weatherList: Weather[];
   eventsList: GameEvent[];
+  nightEventsList: GameEvent[];
   
   selectedCommissions: string[];
   selectedVehicle: string | null;
   selectedRoute: string | null;
+  selectedNightChoice: NightTravelChoice;
   currentSettlement: TripSettlement | null;
   showSettlement: boolean;
   currentEvent: GameEvent | null;
@@ -81,6 +90,7 @@ interface GameState {
   selectCommission: (commissionId: string) => void;
   selectVehicle: (vehicleId: string) => void;
   selectRoute: (routeId: string) => void;
+  selectNightChoice: (choice: NightTravelChoice) => void;
   
   startTrip: () => Promise<boolean>;
   processTripEvents: (tripId: string) => void;
@@ -94,6 +104,8 @@ interface GameState {
   
   updatePlayerGold: (amount: number) => void;
   updatePlayerReputation: (amount: number) => void;
+  
+  buyNightPass: () => boolean;
   
   getAvailableVehicles: () => PlayerVehicle[];
   getAvailableRoutes: (destinationId: string) => Route[];
@@ -115,10 +127,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   vehicleTemplates: [],
   weatherList: [],
   eventsList: [],
+  nightEventsList: [],
   
   selectedCommissions: [],
   selectedVehicle: null,
   selectedRoute: null,
+  selectedNightChoice: null,
   currentSettlement: null,
   showSettlement: false,
   currentEvent: null,
@@ -142,6 +156,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           vehicles: Vehicle[];
           weather: Weather[];
           events: GameEvent[];
+          nightEvents: GameEvent[];
         };
         set({
           cities: data.cities,
@@ -150,6 +165,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           vehicleTemplates: data.vehicles,
           weatherList: data.weather,
           eventsList: data.events,
+          nightEventsList: data.nightEvents,
         });
       }
     } catch (error) {
@@ -223,6 +239,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       selectedCommissions: [],
       selectedVehicle: null,
       selectedRoute: null,
+      selectedNightChoice: null,
       currentSettlement: null,
       showSettlement: false,
       currentEvent: null,
@@ -316,7 +333,25 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   
   selectRoute: (routeId: string) => {
-    set({ selectedRoute: routeId });
+    set({ selectedRoute: routeId, selectedNightChoice: null });
+  },
+  
+  selectNightChoice: (choice: NightTravelChoice) => {
+    set({ selectedNightChoice: choice });
+  },
+  
+  buyNightPass: () => {
+    const state = get();
+    const check = canPurchaseNightPass(state.player);
+    if (!check.can) {
+      set({ error: check.reason });
+      return false;
+    }
+    
+    const newPlayer = purchaseNightPass(state.player);
+    set({ player: newPlayer });
+    get().saveGame();
+    return true;
   },
   
   startTrip: async () => {
@@ -325,7 +360,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     
     try {
       const state = get();
-      const { selectedCommissions, selectedVehicle, selectedRoute } = state;
+      const { selectedCommissions, selectedVehicle, selectedRoute, selectedNightChoice } = state;
       
       if (selectedCommissions.length === 0) {
         set({ error: '请选择要运输的货物' });
@@ -376,11 +411,25 @@ export const useGameStore = create<GameState>((set, get) => ({
         return false;
       }
       
-      const routeCalc = calculateRouteTime(route, vehicle, weather);
-      const tripCost = calculateTripCost(route, vehicle, routeCalc.totalTime);
+      const nightResult = resolveNightTravel(
+        selectedNightChoice,
+        state.player,
+        route.type,
+        route.baseCost,
+        route.baseTimeHours
+      );
+      
+      const routeCalc = calculateRouteTime(route, vehicle, weather, selectedNightChoice);
+      const nightExtraCost = nightResult.extraCost;
+      const tripCost = calculateTripCost(route, vehicle, routeCalc.totalTime, nightExtraCost);
       
       if (state.player.gold < tripCost) {
         set({ error: '金币不足，无法支付运输费用' });
+        return false;
+      }
+      
+      if (selectedNightChoice === 'night_pass' && state.player.nightPass.count <= 0) {
+        set({ error: '夜行牌数量不足' });
         return false;
       }
       
@@ -403,7 +452,17 @@ export const useGameStore = create<GameState>((set, get) => ({
         events: [],
         eventEffects: [],
         totalCost: tripCost,
+        nightTravelChoice: selectedNightChoice,
+        nightEventPool: nightResult.eventPool,
+        nightExtraCost: nightResult.extraCost,
+        nightExtraTimeHours: nightResult.extraTimeHours,
+        nightReputationChange: nightResult.reputationChange,
       };
+      
+      let updatedPlayer = { ...state.player };
+      if (selectedNightChoice === 'night_pass') {
+        updatedPlayer.nightPass = consumeNightPass(state.player.nightPass);
+      }
       
       const updatedVehicles = state.vehicles.map(v =>
         v.id === selectedVehicle ? { ...v, isAvailable: false } : v
@@ -423,9 +482,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         trips: [...state.trips, trip],
         vehicles: updatedVehicles,
         commissions: updatedCommissions,
+        player: updatedPlayer,
         selectedCommissions: [],
         selectedVehicle: null,
         selectedRoute: null,
+        selectedNightChoice: null,
       });
       
       await get().saveGame();
@@ -443,7 +504,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     const route = state.routes.find(r => r.id === trip.routeId);
     if (!route) return;
     
-    const allEvents = getRandomEvents(state.eventsList, route.type, 2);
+    const nightEventPool = trip.nightEventPool || 'normal';
+    const eventCount = nightEventPool !== 'normal' ? 3 : 2;
+    
+    const allEvents = getRandomEvents(
+      state.eventsList,
+      route.type,
+      eventCount,
+      state.nightEventsList,
+      nightEventPool
+    );
     
     set({
       currentTripId: tripId,
@@ -621,8 +691,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       } : t
     );
     
+    const nightReputationChange = trip.nightReputationChange || 0;
     const newReputation = Math.max(0, Math.min(1000, 
-      state.player.reputation + settlement.reputationChange
+      state.player.reputation + settlement.reputationChange + nightReputationChange
     ));
     const repInfo = calculateReputationGrade(newReputation);
     

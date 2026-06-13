@@ -1,4 +1,5 @@
-import type { Route, Vehicle, Weather, Commission, Goods, PlayerVehicle } from '../../shared/types';
+import type { Route, Vehicle, Weather, Commission, Goods, PlayerVehicle, NightTravelChoice } from '../../shared/types';
+import { calculateNightTimeModifier, WAIT_DAWN_HOURS } from './nightRules';
 
 type VehicleLike = Vehicle | PlayerVehicle;
 
@@ -10,6 +11,8 @@ export interface RouteCalculation {
   stops: number;
   stopTime: number;
   distance: number;
+  nightTimeModifier: number;
+  nightExtraHours: number;
 }
 
 export interface LoadCalculation {
@@ -32,17 +35,21 @@ export interface DamageCalculation {
 export const calculateRouteTime = (
   route: Route,
   vehicle: VehicleLike,
-  weather: Weather
+  weather: Weather,
+  nightChoice?: NightTravelChoice
 ): RouteCalculation => {
   const baseTime = route.baseTimeHours;
   const weatherModifier = weather.speedModifier;
   const vehicleSpeed = vehicle.speed;
   const stops = route.stops;
   const stopTime = stops * 2;
-  
-  const adjustedTime = (route.distance / vehicleSpeed) * weatherModifier;
-  const totalTime = Math.ceil(adjustedTime + stopTime);
-  
+
+  const nightTimeModifier = nightChoice ? calculateNightTimeModifier(route.type, nightChoice) : 1;
+  const nightExtraHours = nightChoice === 'wait_dawn' ? WAIT_DAWN_HOURS : 0;
+
+  const adjustedTime = (route.distance / vehicleSpeed) * weatherModifier * nightTimeModifier;
+  const totalTime = Math.ceil(adjustedTime + stopTime + nightExtraHours);
+
   return {
     baseTime,
     weatherModifier,
@@ -51,6 +58,8 @@ export const calculateRouteTime = (
     stops,
     stopTime,
     distance: route.distance,
+    nightTimeModifier,
+    nightExtraHours,
   };
 };
 
@@ -110,11 +119,12 @@ export const calculateDamageChance = (
 export const calculateTripCost = (
   route: Route,
   vehicle: VehicleLike,
-  totalTime: number
+  totalTime: number,
+  nightExtraCost: number = 0
 ): number => {
   const baseCost = route.baseCost;
   const hourlyCost = vehicle.costPerHour * totalTime;
-  return baseCost + hourlyCost;
+  return baseCost + hourlyCost + nightExtraCost;
 };
 
 export const calculateReward = (

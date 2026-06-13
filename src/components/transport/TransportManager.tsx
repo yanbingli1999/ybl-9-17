@@ -1,8 +1,10 @@
-import { Truck, Clock, MapPin, AlertTriangle } from 'lucide-react';
+import { Truck, Clock, MapPin, AlertTriangle, Moon, Shield, Coins, Sun } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
+import { getNightEventPoolLabel } from '../../utils/nightRules';
+import type { Trip } from '../../../shared/types';
 
 const TransportManager = () => {
-  const { trips, vehicles, routes, cities, commissions, goodsList, currentWeather } = useGameStore();
+  const { trips, vehicles, routes, cities, commissions, goodsList, currentWeather, processTripEvents, currentTripId, showEvent, showSettlement } = useGameStore();
   
   const inProgressTrips = trips.filter(t => t.status === 'in_progress');
   const completedTrips = trips.filter(t => t.status === 'completed').slice(-5);
@@ -25,7 +27,16 @@ const TransportManager = () => {
     }
   };
 
-  const getTripInfo = (trip: any) => {
+  const getNightChoiceLabel = (choice: string | null | undefined) => {
+    switch (choice) {
+      case 'night_pass': return { label: '夜行牌', icon: <Shield className="w-3 h-3" />, color: 'text-green-600' };
+      case 'bribe': return { label: '贿赂通行', icon: <Coins className="w-3 h-3" />, color: 'text-amber-600' };
+      case 'wait_dawn': return { label: '等待天亮', icon: <Sun className="w-3 h-3" />, color: 'text-slate-600' };
+      default: return null;
+    }
+  };
+
+  const getTripInfo = (trip: Trip) => {
     const vehicle = vehicles.find(v => v.id === trip.vehicleId);
     const route = routes.find(r => r.id === trip.routeId);
     const destCity = cities.find(c => 
@@ -35,7 +46,7 @@ const TransportManager = () => {
       trip.commissionIds.includes(c.id)
     );
     
-    return { vehicle, route, destCity, tripCommissions };
+    return { vehicle, destCity, tripCommissions };
   };
 
   return (
@@ -56,6 +67,32 @@ const TransportManager = () => {
           </div>
         )}
         
+        {inProgressTrips.length > 0 && useGameStore.getState().player.timeOfDay === 'night' && (
+          <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Moon className="w-6 h-6 text-indigo-600" />
+                <div>
+                  <p className="font-medium text-indigo-800">夜间运输</p>
+                  <p className="text-sm text-indigo-600">夜晚路途中可能遭遇特殊事件，点击下方按钮处理</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const isBusy = currentTripId || showEvent || showSettlement;
+                  if (isBusy) return;
+                  const trip = inProgressTrips[0];
+                  processTripEvents(trip.id);
+                }}
+                disabled={!!currentTripId || showEvent || showSettlement}
+                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {currentTripId ? '处理中...' : '处理途中事件'}
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
@@ -72,11 +109,13 @@ const TransportManager = () => {
             ) : (
               <div className="space-y-4">
                 {inProgressTrips.map(trip => {
-                  const { vehicle, route, destCity, tripCommissions } = getTripInfo(trip);
+                  const { vehicle, destCity, tripCommissions } = getTripInfo(trip);
                   const totalWeight = tripCommissions.reduce((sum, c) => {
                     const goods = goodsList.find(g => g.id === c.goodsId);
                     return sum + (c.quantity * (goods?.weight || 1));
                   }, 0);
+                  
+                  const nightInfo = getNightChoiceLabel(trip.nightTravelChoice);
                   
                   return (
                     <div key={trip.id} className="bg-white rounded-xl shadow-md p-5">
@@ -97,6 +136,18 @@ const TransportManager = () => {
                           {getStatusLabel(trip.status)}
                         </span>
                       </div>
+                      
+                      {nightInfo && (
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 ${nightInfo.color}`}>
+                            {nightInfo.icon}
+                            {nightInfo.label}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {getNightEventPoolLabel(trip.nightEventPool || 'normal')}
+                          </span>
+                        </div>
+                      )}
                       
                       <div className="space-y-3">
                         <div>
@@ -171,6 +222,7 @@ const TransportManager = () => {
               <div className="space-y-3">
                 {completedTrips.map(trip => {
                   const { vehicle, destCity, tripCommissions } = getTripInfo(trip);
+                  const nightInfo = getNightChoiceLabel(trip.nightTravelChoice);
                   
                   return (
                     <div key={trip.id} className="bg-white rounded-xl shadow-md p-4">
@@ -188,6 +240,12 @@ const TransportManager = () => {
                       <div className="text-sm text-slate-500">
                         {tripCommissions.map(c => c.goodsName).join(', ')} x{tripCommissions.length}
                       </div>
+                      {nightInfo && (
+                        <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                          <Moon className="w-3 h-3" />
+                          {nightInfo.label}
+                        </div>
+                      )}
                       {trip.actualArrivalTime && (
                         <div className="text-xs text-slate-400 mt-1">
                           完成时间: {new Date(trip.actualArrivalTime).toLocaleString()}

@@ -119,6 +119,11 @@ export interface Trip {
   events: string[];
   eventEffects: { title: string; effect: any }[];
   totalCost: number;
+  nightTravelChoice: NightTravelChoice;
+  nightEventPool: 'night_land' | 'night_water' | 'normal';
+  nightExtraCost: number;
+  nightExtraTimeHours: number;
+  nightReputationChange: number;
 }
 
 export interface Warehouse {
@@ -140,6 +145,33 @@ export interface LedgerEntry {
   createdAt: number;
 }
 
+export type NightTravelChoice = 'night_pass' | 'bribe' | 'wait_dawn' | null;
+
+export interface NightPass {
+  count: number;
+}
+
+export interface NightTravelOption {
+  choice: NightTravelChoice;
+  label: string;
+  description: string;
+  costModifier: number;
+  timeModifier: number;
+  reputationModifier: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'none';
+  available: boolean;
+  reason?: string;
+}
+
+export interface NightTravelResult {
+  choice: NightTravelChoice;
+  extraCost: number;
+  extraTimeHours: number;
+  reputationChange: number;
+  eventPool: 'night_land' | 'night_water' | 'normal';
+  eventProbabilityMultiplier: number;
+}
+
 export type ReputationGrade = '甲' | '乙' | '丙' | '丁';
 
 export interface Player {
@@ -151,6 +183,8 @@ export interface Player {
   priceBonus: number;
   currentDay: number;
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
+  nightPass: NightPass;
+  nightTravelChoice: NightTravelChoice;
 }
 
 export interface SaveGame {

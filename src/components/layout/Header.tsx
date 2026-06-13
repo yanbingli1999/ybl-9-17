@@ -1,9 +1,9 @@
-import { Coins, Star, Calendar, Cloud, Save, RotateCcw } from 'lucide-react';
+import { Coins, Star, Calendar, Save, RotateCcw, SkipForward } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
 import { getTimeOfDayName } from '../../utils/gameLogic';
 
 const Header = () => {
-  const { player, currentWeather, getCurrentDate, saveGame, newGame } = useGameStore();
+  const { player, currentWeather, getCurrentDate, saveGame, newGame, advanceTimeOfDay } = useGameStore();
   const timeName = getTimeOfDayName(player.timeOfDay);
   
   const gradeColors: Record<string, string> = {
@@ -29,6 +29,13 @@ const Header = () => {
               <span className="px-2 py-0.5 bg-slate-700 rounded text-xs">
                 {timeName}
               </span>
+              <button
+                onClick={advanceTimeOfDay}
+                className="ml-2 p-1.5 hover:bg-slate-600 rounded transition-colors"
+                title="推进时间"
+              >
+                <SkipForward className="w-4 h-4 text-slate-300 hover:text-white" />
+              </button>
             </div>
           </div>
           

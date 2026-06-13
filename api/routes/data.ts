@@ -72,6 +72,15 @@ router.get('/events', (req: Request, res: Response) => {
   }
 });
 
+router.get('/night-events', (req: Request, res: Response) => {
+  try {
+    const nightEvents = readJsonFile('nightEvents.json');
+    res.json({ success: true, data: nightEvents });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to load night events' });
+  }
+});
+
 router.get('/all', (req: Request, res: Response) => {
   try {
     const cities = readJsonFile('cities.json');
@@ -80,6 +89,7 @@ router.get('/all', (req: Request, res: Response) => {
     const vehicles = readJsonFile('vehicles.json');
     const weather = readJsonFile('weather.json');
     const events = readJsonFile('events.json');
+    const nightEvents = readJsonFile('nightEvents.json');
     
     res.json({
       success: true,
@@ -90,6 +100,7 @@ router.get('/all', (req: Request, res: Response) => {
         vehicles,
         weather,
         events,
+        nightEvents,
       },
     });
   } catch (error) {

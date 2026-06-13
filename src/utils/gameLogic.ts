@@ -90,7 +90,10 @@ export const getRandomWeather = (weatherList: Weather[]): Weather => {
 export const getRandomEvents = (
   eventsList: GameEvent[],
   routeType: 'land' | 'water',
-  count: number = 2
+  count: number = 2,
+  nightEvents: GameEvent[] = [],
+  nightEventPool: 'night_land' | 'night_water' | 'normal' = 'normal',
+  probabilityMultiplier: number = 1
 ): GameEvent[] => {
   const filteredEvents = eventsList.filter(e => {
     if (routeType === 'water' && e.id === 'bandit') return false;
@@ -98,12 +101,25 @@ export const getRandomEvents = (
     return true;
   });
   
+  let pool: GameEvent[];
+  if (nightEventPool !== 'normal' && nightEvents.length > 0) {
+    const filteredNight = nightEvents.filter(e => {
+      if (routeType === 'water' && (e as any).pool === 'night_water') return true;
+      if (routeType === 'land' && (e as any).pool === 'night_land') return true;
+      return false;
+    });
+    pool = [...filteredEvents, ...filteredNight];
+  } else {
+    pool = filteredEvents;
+  }
+  
   const selected: GameEvent[] = [];
-  const shuffled = [...filteredEvents].sort(() => Math.random() - 0.5);
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
   
   for (const event of shuffled) {
     if (selected.length >= count) break;
-    if (Math.random() < event.probability * 2) {
+    const adjustedProbability = event.probability * probabilityMultiplier;
+    if (Math.random() < Math.min(1, adjustedProbability * 2)) {
       selected.push(event);
     }
   }
@@ -121,6 +137,8 @@ export const createInitialPlayer = (): Player => {
     priceBonus: 0,
     currentDay: 1,
     timeOfDay: 'morning',
+    nightPass: { count: 0 },
+    nightTravelChoice: null,
   };
 };
 
