@@ -60,7 +60,8 @@ export const getNightTravelOptions = (
     return [];
   }
 
-  const hasPass = player.nightPass.count > 0;
+  const nightPass = player.nightPass || { count: 0 };
+  const hasPass = nightPass.count > 0;
   const bribeCost = routeType === 'land' 
     ? Math.floor(BRIBE_BASE_COST * BRIBE_LAND_MULTIPLIER) 
     : BRIBE_BASE_COST;
@@ -207,7 +208,8 @@ export const resolveNightTravel = (
 };
 
 export const canPurchaseNightPass = (player: Player): { can: boolean; reason?: string } => {
-  if (player.nightPass.count >= NIGHT_PASS_MAX_COUNT) {
+  const nightPass = player.nightPass || { count: 0 };
+  if (nightPass.count >= NIGHT_PASS_MAX_COUNT) {
     return { can: false, reason: `夜行牌持有数量已达上限(${NIGHT_PASS_MAX_COUNT})` };
   }
   if (player.gold < NIGHT_PASS_COST) {
@@ -223,15 +225,17 @@ export const purchaseNightPass = (player: Player): Player => {
   const check = canPurchaseNightPass(player);
   if (!check.can) return player;
 
+  const nightPass = player.nightPass || { count: 0 };
   return {
     ...player,
     gold: player.gold - NIGHT_PASS_COST,
-    nightPass: { count: player.nightPass.count + 1 },
+    nightPass: { count: nightPass.count + 1 },
   };
 };
 
 export const consumeNightPass = (nightPass: NightPass): NightPass => {
-  return { count: Math.max(0, nightPass.count - 1) };
+  const safeNightPass = nightPass || { count: 0 };
+  return { count: Math.max(0, safeNightPass.count - 1) };
 };
 
 export const filterNightEvents = (

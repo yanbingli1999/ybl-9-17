@@ -67,14 +67,36 @@ const TransportManager = () => {
           </div>
         )}
         
-        {inProgressTrips.length > 0 && useGameStore.getState().player.timeOfDay === 'night' && (
-          <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+        {inProgressTrips.length > 0 && (
+          <div className={`mb-6 p-4 border rounded-xl ${
+            useGameStore.getState().player.timeOfDay === 'night'
+              ? 'bg-indigo-50 border-indigo-200'
+              : 'bg-amber-50 border-amber-200'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Moon className="w-6 h-6 text-indigo-600" />
+                {useGameStore.getState().player.timeOfDay === 'night' ? (
+                  <Moon className="w-6 h-6 text-indigo-600" />
+                ) : (
+                  <Sun className="w-6 h-6 text-amber-600" />
+                )}
                 <div>
-                  <p className="font-medium text-indigo-800">夜间运输</p>
-                  <p className="text-sm text-indigo-600">夜晚路途中可能遭遇特殊事件，点击下方按钮处理</p>
+                  <p className={`font-medium ${
+                    useGameStore.getState().player.timeOfDay === 'night'
+                      ? 'text-indigo-800'
+                      : 'text-amber-800'
+                  }`}>
+                    {useGameStore.getState().player.timeOfDay === 'night' ? '夜间运输' : '日间运输'}
+                  </p>
+                  <p className={`text-sm ${
+                    useGameStore.getState().player.timeOfDay === 'night'
+                      ? 'text-indigo-600'
+                      : 'text-amber-600'
+                  }`}>
+                    {useGameStore.getState().player.timeOfDay === 'night'
+                      ? '夜晚路途中可能遭遇特殊事件，点击下方按钮处理'
+                      : '点击处理途中事件并完成运输结算'}
+                  </p>
                 </div>
               </div>
               <button
@@ -85,7 +107,11 @@ const TransportManager = () => {
                   processTripEvents(trip.id);
                 }}
                 disabled={!!currentTripId || showEvent || showSettlement}
-                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className={`px-5 py-2.5 text-white rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium ${
+                  useGameStore.getState().player.timeOfDay === 'night'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400'
+                }`}
               >
                 {currentTripId ? '处理中...' : '处理途中事件'}
               </button>

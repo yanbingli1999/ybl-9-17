@@ -124,6 +124,7 @@ export interface Trip {
   nightExtraCost: number;
   nightExtraTimeHours: number;
   nightReputationChange: number;
+  nightEventProbabilityMultiplier: number;
 }
 
 export interface Warehouse {

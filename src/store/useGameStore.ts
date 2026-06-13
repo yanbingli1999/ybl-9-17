@@ -181,10 +181,24 @@ export const useGameStore = create<GameState>((set, get) => ({
       const response = await api.save.get();
       if (response.success && response.data) {
         const saveData = response.data as SaveGame;
+        const migratedPlayer = {
+          ...saveData.player,
+          nightPass: saveData.player.nightPass || { count: 0 },
+          nightTravelChoice: saveData.player.nightTravelChoice || null,
+        };
+        const migratedTrips = saveData.trips.map(trip => ({
+          ...trip,
+          nightTravelChoice: trip.nightTravelChoice || null,
+          nightEventPool: trip.nightEventPool || 'normal',
+          nightExtraCost: trip.nightExtraCost || 0,
+          nightExtraTimeHours: trip.nightExtraTimeHours || 0,
+          nightReputationChange: trip.nightReputationChange || 0,
+          nightEventProbabilityMultiplier: trip.nightEventProbabilityMultiplier || 1,
+        }));
         set({
-          player: saveData.player,
+          player: migratedPlayer,
           commissions: saveData.commissions,
-          trips: saveData.trips,
+          trips: migratedTrips,
           vehicles: saveData.vehicles,
           warehouse: saveData.warehouse,
           ledger: saveData.ledger,
@@ -428,7 +442,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         return false;
       }
       
-      if (selectedNightChoice === 'night_pass' && state.player.nightPass.count <= 0) {
+      if (selectedNightChoice === 'night_pass' && (state.player.nightPass?.count ?? 0) <= 0) {
         set({ error: '夜行牌数量不足' });
         return false;
       }
@@ -457,6 +471,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         nightExtraCost: nightResult.extraCost,
         nightExtraTimeHours: nightResult.extraTimeHours,
         nightReputationChange: nightResult.reputationChange,
+        nightEventProbabilityMultiplier: nightResult.eventProbabilityMultiplier,
       };
       
       let updatedPlayer = { ...state.player };
@@ -506,13 +521,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     
     const nightEventPool = trip.nightEventPool || 'normal';
     const eventCount = nightEventPool !== 'normal' ? 3 : 2;
+    const probabilityMultiplier = trip.nightEventProbabilityMultiplier || 1;
     
     const allEvents = getRandomEvents(
       state.eventsList,
       route.type,
       eventCount,
       state.nightEventsList,
-      nightEventPool
+      nightEventPool,
+      probabilityMultiplier
     );
     
     set({
@@ -646,7 +663,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     
     const loadCalc = calculateLoad(vehicle, commissions, state.goodsList);
     
-    const routeCalc = calculateRouteTime(route, vehicle, weather);
+    const routeCalc = calculateRouteTime(route, vehicle, weather, trip.nightTravelChoice);
+    const nightExtraHours = trip.nightExtraTimeHours || 0;
+    const totalTripHoursWithNight = routeCalc.totalTime + nightExtraHours;
     
     const settlement = settleTrip(
       trip,
@@ -657,7 +676,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       loadCalc.isOverloaded,
       trip.eventEffects,
       state.player.priceBonus,
-      routeCalc.totalTime
+      totalTripHoursWithNight
     );
     
     const ledgerEntries = generateLedgerEntries(

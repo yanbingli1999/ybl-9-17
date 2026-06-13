@@ -122,7 +122,7 @@ const RoutePlanner = () => {
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-lg border border-amber-200">
               <Ticket className="w-5 h-5 text-amber-600" />
-              <span className="font-medium text-amber-700">夜行牌: {player.nightPass.count}</span>
+              <span className="font-medium text-amber-700">夜行牌: {player.nightPass?.count ?? 0}</span>
             </div>
           </div>
         </div>
@@ -255,7 +255,7 @@ const RoutePlanner = () => {
                   </h3>
                   <button
                     onClick={handleBuyNightPass}
-                    disabled={player.nightPass.count >= 5}
+                    disabled={(player.nightPass?.count ?? 0) >= 5}
                     className="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     购买夜行牌 ({NIGHT_PASS_COST} 金币)
