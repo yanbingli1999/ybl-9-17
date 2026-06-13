@@ -1,0 +1,158 @@
+{
+  "player": {
+    "id": "1781340663359-yvdt2dvg6",
+    "name": "月港邮差",
+    "gold": 855,
+    "reputation": 600,
+    "reputationGrade": "丙",
+    "priceBonus": 0,
+    "currentDay": 1,
+    "timeOfDay": "afternoon"
+  },
+  "commissions": [
+    {
+      "id": "1781340663359-5bu1u0e0n",
+      "goodsId": "porcelain",
+      "goodsName": "瓷器",
+      "destinationId": "hangzhou",
+      "destinationName": "杭州",
+      "quantity": 12,
+      "reward": 23628,
+      "deadlineHours": 12,
+      "fragility": 90,
+      "isAccepted": false,
+      "createdAt": 1781340663359
+    },
+    {
+      "id": "1781340663359-kijcplorl",
+      "goodsId": "ink",
+      "goodsName": "墨锭",
+      "destinationId": "nanyang",
+      "destinationName": "南洋",
+      "quantity": 17,
+      "reward": 4720,
+      "deadlineHours": 31,
+      "fragility": 45,
+      "isAccepted": true,
+      "createdAt": 1781340663359,
+      "acceptedAt": 1781340718097,
+      "isShipped": true
+    },
+    {
+      "id": "1781340663359-l7bb09pxk",
+      "goodsId": "rice",
+      "goodsName": "大米",
+      "destinationId": "quanzhou",
+      "destinationName": "泉州",
+      "quantity": 14,
+      "reward": 1791,
+      "deadlineHours": 26,
+      "fragility": 15,
+      "isAccepted": false,
+      "createdAt": 1781340663359
+    },
+    {
+      "id": "1781340663359-1jf9mk116",
+      "goodsId": "tea",
+      "goodsName": "茶叶",
+      "destinationId": "wuhan",
+      "destinationName": "武汉",
+      "quantity": 17,
+      "reward": 6969,
+      "deadlineHours": 29,
+      "fragility": 40,
+      "isAccepted": false,
+      "createdAt": 1781340663359
+    },
+    {
+      "id": "1781340663359-whf6w508a",
+      "goodsId": "jewelry",
+      "goodsName": "珠宝",
+      "destinationId": "chengdu",
+      "destinationName": "成都",
+      "quantity": 6,
+      "reward": 25152,
+      "deadlineHours": 19,
+      "fragility": 30,
+      "isAccepted": false,
+      "createdAt": 1781340663359
+    },
+    {
+      "id": "1781340663359-itqjpx9bg",
+      "goodsId": "paper",
+      "goodsName": "宣纸",
+      "destinationId": "guangzhou",
+      "destinationName": "广州",
+      "quantity": 13,
+      "reward": 7405,
+      "deadlineHours": 30,
+      "fragility": 55,
+      "isAccepted": false,
+      "createdAt": 1781340663359
+    }
+  ],
+  "trips": [
+    {
+      "id": "1781341199842-gngfd8prl",
+      "vehicleId": "1781340663359-7t2ypsmg3",
+      "routeId": "yuegang-quanzhou-land",
+      "commissionIds": [
+        "1781340663359-kijcplorl"
+      ],
+      "status": "in_progress",
+      "progress": 0,
+      "departureTime": 1781341199842,
+      "eta": 1781409599842,
+      "currentDamage": 0,
+      "weatherId": "sunny",
+      "events": [],
+      "eventEffects": [],
+      "totalCost": 145
+    }
+  ],
+  "vehicles": [
+    {
+      "id": "1781340663359-7t2ypsmg3",
+      "vehicleId": "donkey-cart",
+      "name": "驴车",
+      "type": "land",
+      "capacity": 50,
+      "speed": 12,
+      "costPerHour": 5,
+      "icon": "🐴",
+      "isAvailable": false
+    },
+    {
+      "id": "1781340663359-tr6rsuxfr",
+      "vehicleId": "small-boat",
+      "name": "小渡船",
+      "type": "water",
+      "capacity": 80,
+      "speed": 20,
+      "costPerHour": 15,
+      "icon": "⛵",
+      "isAvailable": true
+    }
+  ],
+  "warehouse": {
+    "id": "1781340663359-sx96nxllb",
+    "level": 1,
+    "capacity": 100,
+    "usedSpace": 34,
+    "upgradeCost": 500
+  },
+  "ledger": [
+    {
+      "id": "1781341199842-8ipsi5hun",
+      "type": "expense",
+      "description": "运输成本 - 驴车",
+      "amount": 145,
+      "date": "2024年1月1日",
+      "day": 1,
+      "category": "成本",
+      "createdAt": 1781341199842
+    }
+  ],
+  "currentWeatherId": "sunny",
+  "savedAt": 1781341199852
+}
